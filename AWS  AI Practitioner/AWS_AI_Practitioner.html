@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>AWS AI Practitioner</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="../all.css">
+</head>
+<body>
+
+  <div class="quiz-container">
+    <h1>AWS AI Practitioner</h1>
+    <div class="progress">
+      <div class="progress-bar" id="progressBar"></div>
+    </div>
+
+    <h2>Choose a Quiz Section:</h2>
+    <button class="btn" onclick="loadRandomQuestion()">Random Practice (45 Questions)</button>
+    <button class="btn" onclick="showPracticeRangeForm()">Start Practice</button>
+  </div>
+
+  <div id="quiz" style="display: none;"></div>
+
+  <button class="btn" id="submit-btn" style="display: none; margin-left: 50px;" onclick="submitAnswer()">Submit</button>
+  <button class="btn" id="next-btn" style="display: none; margin-left: 50px;" onclick="nextQuestion()">Next</button>
+
+  <div class="feedback" id="feedback" style="display: none;"></div>
+
+  <div class="score-container" id="score-container" style="display:none;">
+    <canvas id="scoreChart" width="10" height="10" style="width: 20px; height: 20px;"></canvas>
+    <button class="btn" id="start-over-btn" style="justify-items: center;" onclick="location.reload()">Start Over</button>
+  </div>
+
+  <div id="popupOverlay"></div>
+  <div id="practicePopup">
+    <div class="question">Enter Question Range to Practice:</div>
+    <h3>75 Question available</h3>
+    <input type="number" id="rangeStart" placeholder="Start (e.g. 2)" style="width:100%; margin-bottom:10px;" />
+    <input type="number" id="rangeEnd" placeholder="End (e.g. 50)" style="width:100%; margin-bottom:10px;" />
+    <button class="btn" onclick="startPracticeRange()">Start Practice</button>
+  </div>
+
+  <script>
+    let currentIndex = 0;
+    let score = 0;
+    let section = 0;
+    const questionsInSection = 45;
+    let customQuestionList = [];
+
+    function startQuiz(sectionNumber) {
+      section = sectionNumber;
+      currentIndex = (sectionNumber - 1) * questionsInSection;
+      score = 0;
+      document.querySelector(".quiz-container h2").style.display = "none";
+      document.querySelectorAll(".quiz-container button").forEach(btn => btn.style.display = "none");
+      document.getElementById("quiz").style.display = "block";
+      document.getElementById("submit-btn").style.display = "inline-block";
+      document.getElementById("feedback").style.display = "block";
+      showQuestion();
+      updateProgress();
+    }
+
+    function showQuestion() {
+      const quiz = document.getElementById("quiz");
+      const q = questions[currentIndex];
+      let html = `<div class="question">Question ${currentIndex + 1}: ${q.question}</div><div class="options">`;
+      q.options.forEach((opt, i) => {
+        html += `<label><input type="radio" name="option" value="${i}"> ${opt}</label>`;
+      });
+      html += `</div>`;
+      quiz.innerHTML = html;
+      document.getElementById("feedback").innerText = '';
+      document.getElementById("submit-btn").style.display = "inline-block";
+      document.getElementById("next-btn").style.display = "none";
+    }
+
+    function submitAnswer() {
+      const selected = document.querySelector('input[name="option"]:checked');
+      if (!selected) return alert("Please select an option.");
+
+      const selectedValue = parseInt(selected.value);
+      const q = section === -1 ? customQuestionList[currentIndex] : questions[currentIndex];
+      const correctAnswer = q.answer;
+      const correctText = q.options[correctAnswer];
+
+      if (selectedValue === correctAnswer) {
+        score++;
+        document.getElementById("feedback").innerText = "✅ Correct!";
+        document.getElementById("feedback").style.color = "green";
+      } else {
+        document.getElementById("feedback").innerText = `❌ Incorrect. Correct answer: ${correctText}`;
+        document.getElementById("feedback").style.color = "red";
+      }
+
+      document.getElementById("submit-btn").style.display = "none";
+      document.getElementById("next-btn").style.display = "inline-block";
+    }
+
+    function nextQuestion() {
+      currentIndex++;
+      if (section === -1) {
+        if (currentIndex < customQuestionList.length) {
+          showCustomPracticeQuestion();
+          updateProgress();
+        } else showScore();
+      } else {
+        const maxIndex = section * questionsInSection;
+        if (currentIndex < maxIndex && currentIndex < questions.length) {
+          showQuestion();
+          updateProgress();
+        } else showScore();
+      }
+    }
+
+    function showScore() {
+      document.getElementById("quiz").style.display = "none";
+      document.getElementById("submit-btn").style.display = "none";
+      document.getElementById("next-btn").style.display = "none";
+      document.getElementById("feedback").style.display = "none";
+      document.getElementById("progressBar").style.width = "100%";
+      document.getElementById("score-container").style.display = "block";
+
+      const ctx = document.getElementById('scoreChart').getContext('2d');
+      const total = section === -1 ? customQuestionList.length : questionsInSection;
+      const percentage = (score / total) * 100;
+
+      new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          datasets: [{
+            data: [percentage, 100 - percentage],
+            backgroundColor: ['#4caf50', '#eee'],
+            borderWidth: 5
+          }]
+        },
+        options: {
+          cutout: '75%',
+          plugins: {
+            tooltip: { enabled: false },
+            legend: { display: false },
+            title: {
+              display: true,
+              text: `✅ ${score} / ${total}`,
+              color: '#333',
+              font: { size: 22, weight: 'bold' }
+            }
+          }
+        }
+      });
+
+      document.getElementById("start-over-btn").style.display = "inline-block";
+    }
+
+    function loadRandomQuestion() {
+      section = -1;
+      const shuffled = [...questions].sort(() => 0.5 - Math.random());
+      customQuestionList = shuffled.slice(0, 45);
+      currentIndex = 0;
+
+      document.querySelector(".quiz-container h2").style.display = "none";
+      document.querySelectorAll(".quiz-container button").forEach(btn => btn.style.display = "none");
+      document.getElementById("quiz").style.display = "block";
+      document.getElementById("submit-btn").style.display = "inline-block";
+      document.getElementById("feedback").style.display = "block";
+
+      showCustomPracticeQuestion();
+      updateProgress();
+    }
+
+    function showPracticeRangeForm() {
+      document.getElementById("practicePopup").style.display = "block";
+      document.getElementById("popupOverlay").style.display = "block";
+    }
+
+    function startPracticeRange() {
+      const start = parseInt(document.getElementById("rangeStart").value) - 1;
+      const end = parseInt(document.getElementById("rangeEnd").value);
+
+      if (isNaN(start) || isNaN(end) || start < 0 || end > questions.length || start >= end) {
+        alert("Please enter a valid range.");
+        return;
+      }
+
+      document.getElementById("practicePopup").style.display = "none";
+      document.getElementById("popupOverlay").style.display = "none";
+
+      customQuestionList = questions.slice(start, end);
+      currentIndex = 0;
+      section = -1;
+
+      document.getElementById("quiz").style.display = "block";
+      document.getElementById("submit-btn").style.display = "inline-block";
+      document.getElementById("feedback").style.display = "block";
+      document.querySelector(".quiz-container h2").style.display = "none";
+      document.querySelectorAll(".quiz-container button").forEach(btn => btn.style.display = "none");
+
+      showCustomPracticeQuestion();
+      updateProgress();
+    }
+
+    function showCustomPracticeQuestion() {
+      const quiz = document.getElementById("quiz");
+      const q = customQuestionList[currentIndex];
+      let html = `<div class="question">Practice Question ${currentIndex + 1}: ${q.question}</div><div class="options">`;
+      q.options.forEach((opt, i) => {
+        html += `<label><input type="radio" name="option" value="${i}"> ${opt}</label>`;
+      });
+      html += `</div>`;
+      quiz.innerHTML = html;
+      document.getElementById("feedback").innerText = '';
+      document.getElementById("submit-btn").style.display = "inline-block";
+      document.getElementById("next-btn").style.display = "none";
+    }
+
+    function updateProgress() {
+      let progressPercent;
+      if (section === -1) {
+        progressPercent = (currentIndex / customQuestionList.length) * 100;
+      } else {
+        const start = (section - 1) * questionsInSection;
+        const answered = currentIndex - start;
+        progressPercent = (answered / questionsInSection) * 100;
+      }
+      document.getElementById("progressBar").style.width = `${progressPercent}%`;
+    }
+  </script>
+
+  <script src="AWS_AI_data.js"></script>
+</body>
+</html>
