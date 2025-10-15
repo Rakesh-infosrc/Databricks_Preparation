@@ -88,10 +88,10 @@
 
         const selectedValue = parseInt(selected.value);
         const q = section === -1 ? customQuestionList[currentIndex] : questions[currentIndex];
-        const correctAnswer = q.answer;
-        const correctText = q.options[correctAnswer];
+        const correctAnswers = Array.isArray(q.answer) ? q.answer : [q.answer];
+        const correctText = correctAnswers.map(idx => q.options[idx]).join(", ");
 
-        if (selectedValue === correctAnswer) {
+        if (correctAnswers.includes(selectedValue)) {
           score++;
           document.getElementById("feedback").innerHTML = "<span class=\"feedback-success\">✅ Correct!</span>";
         } else {
