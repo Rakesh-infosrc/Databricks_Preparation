@@ -589,7 +589,7 @@ const questions = [
             "A. Airline-Name",
             "B. _Airline-Name",
             "C. @Airline-Name",
-            `D. "Airline - Name"`
+            "D. \"Airline - Name\""
         ],
         "answer": [2]
     },
@@ -825,4 +825,4 @@ const questions = [
     }
 ];
 
-export default questions;
+globalThis.questions = questions;

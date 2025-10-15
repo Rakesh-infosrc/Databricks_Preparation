@@ -5,6 +5,7 @@
   <title>Databricks Quiz</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link rel="stylesheet" href="../all.css">
+  <link rel="icon" type="image/png" href="../Img/icon1.png">
 </head>
 <body>
 
@@ -20,26 +21,32 @@
     <button class="btn" onclick="startQuiz(3)">Section 3 (Questions 91–135)</button> -->
     <button class="btn" onclick="loadRandomQuestion()">Random Practice (45 Questions)</button>
     <button class="btn" onclick="showPracticeRangeForm()">Start Practice</button>
-  </div>
 
-  <div id="quiz" style="display: none;"></div>
-
-  <button class="btn" id="submit-btn" style="display: none; margin-left: 50px;" onclick="submitAnswer()">Submit</button>
-  <button class="btn" id="next-btn" style="display: none; margin-left: 50px;" onclick="nextQuestion()">Next</button>
-
-  <div class="feedback" id="feedback" style="display: none;"></div>
-
-  <div class="score-container" id="score-container" style="display:none;">
-    <canvas id="scoreChart" width="10" height="10" style="width: 20px; height: 20px;"></canvas>
-    <button class="btn" id="start-over-btn" style="justify-items: center;" onclick="location.reload()">Start Over</button>
+    <div class="quiz-layout">
+      <div class="quiz-main">
+        <div id="quiz" style="display: none;"></div>
+        <div class="feedback" id="feedback" style="display: none;"></div>
+        <button class="btn" id="submit-btn" style="display: none;" onclick="submitAnswer()">Submit</button>
+        <button class="btn" id="next-btn" style="display: none;" onclick="nextQuestion()">Next</button>
+      </div>
+      <div class="quiz-aside">
+        <div class="score-container" id="score-container" style="display:none;">
+          <canvas id="scoreChart"></canvas>
+          <div id="scoreSummary" class="score-summary"></div>
+          <button class="btn" id="start-over-btn" onclick="location.reload()">Start Over</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <div id="popupOverlay"></div>
   <div id="practicePopup">
     <div class="question">Enter Question Range to Practice:</div>
-    <h3>135 Question avaliable </h3>
-    <input type="number" id="rangeStart" placeholder="Start (e.g. 2)" style="width:100%; margin-bottom:10px;" />
-    <input type="number" id="rangeEnd" placeholder="End (e.g. 50)" style="width:100%; margin-bottom:10px;" />
+    <h3 id="availableCount">135 Question available</h3>
+    <div class="range-inputs">
+      <input type="number" id="rangeStart" placeholder="Start (e.g. 2)" />
+      <input type="number" id="rangeEnd" placeholder="End (e.g. 50)" />
+    </div>
     <button class="btn" onclick="startPracticeRange()">Start Practice</button>
   </div>
 
@@ -88,11 +95,12 @@
 
       if (selectedValue === correctAnswer) {
         score++;
-        document.getElementById("feedback").innerText = "✅ Correct!";
-        document.getElementById("feedback").style.color = "green";
+        document.getElementById("feedback").innerHTML = "<span class=\"feedback-success\">✅ Correct!</span>";
       } else {
-        document.getElementById("feedback").innerText = `❌ Incorrect. Correct answer: ${correctText}`;
-        document.getElementById("feedback").style.color = "red";
+        document.getElementById("feedback").innerHTML = `
+          <span class="feedback-label">❌ Incorrect. Correct answer:</span>
+          <span class="feedback-answer">${correctText}</span>
+        `;
       }
 
       document.getElementById("submit-btn").style.display = "none";
@@ -123,9 +131,12 @@
       document.getElementById("progressBar").style.width = "100%";
       document.getElementById("score-container").style.display = "block";
 
-      const ctx = document.getElementById('scoreChart').getContext('2d');
       const total = section === -1 ? customQuestionList.length : questionsInSection;
-      const percentage = (score / total) * 100;
+      const summaryNode = document.getElementById("scoreSummary");
+      if (summaryNode) summaryNode.textContent = `✅ ${score} / ${total}`;
+
+      const ctx = document.getElementById('scoreChart').getContext('2d');
+      const percentage = total > 0 ? (score / total) * 100 : 0;
 
       new Chart(ctx, {
         type: 'doughnut',
@@ -171,6 +182,10 @@
     }
 
     function showPracticeRangeForm() {
+      const availableCount = document.getElementById("availableCount");
+      if (availableCount) {
+        availableCount.innerText = `${questions.length} Question${questions.length === 1 ? "" : "s"} available`;
+      }
       document.getElementById("practicePopup").style.display = "block";
       document.getElementById("popupOverlay").style.display = "block";
     }
@@ -228,7 +243,6 @@
     }
   </script>
 
-  <!-- Replace with your actual question dataset -->
   <script src="data.js"></script>
 </body>
 </html>
